@@ -358,14 +358,27 @@ export const drawGDGPupText = (
     (rightTemple.x - leftTemple.x) * width
   );
 
-  const radius   = faceW * 0.6 + faceH * 0.18;
-  const text     = "gdg pup";
-  const fontSize = faceW * 0.13;
+  const radius   = faceW * 0.62 + faceH * 0.18;
+  const text     = "GDG PUP";
+  // Bolder + bigger than before, matching the weight of the wordmark
+  // treatment used across the photostrip frame artifacts.
+  const fontSize = faceW * 0.16;
+
+  // Same Google-brand four-color lettering as the frame wordmarks:
+  // "GDG" in blue, then P-U-P in red/yellow/green. The space (index 3)
+  // is skipped — it still occupies a slot in the arc so spacing stays even.
+  const colorForIndex = (i: number): string | null => {
+    if (i <= 2) return "#4285F4"; // G D G
+    if (i === 4) return "#EA4335"; // P
+    if (i === 5) return "#FBBC05"; // U
+    if (i === 6) return "#34A853"; // P
+    return null; // the space
+  };
 
   ctx.save();
   ctx.translate(centerX, centerY);
   ctx.rotate(headAngle);
-  ctx.font = `bold ${fontSize}px 'Arial Black', Arial, sans-serif`;
+  ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
   ctx.textAlign    = "center";
   ctx.textBaseline = "middle";
 
@@ -374,6 +387,9 @@ export const drawGDGPupText = (
   const spacing     = totalAngle / chars.length;
 
   chars.forEach((char, i) => {
+    const color = colorForIndex(i);
+    if (!color) return; // skip the space
+
     const charAngle = spacing * i + spacing / 2;
     const x = Math.cos(charAngle) * radius;
     const y = -Math.sin(charAngle) * radius - faceH * 0.22;
@@ -383,20 +399,17 @@ export const drawGDGPupText = (
     ctx.rotate(-charAngle + Math.PI / 2);
     ctx.scale(-1, 1);
 
-    // Glow
-    ctx.shadowColor = "rgba(230, 203, 241, 0.9)";
-    ctx.shadowBlur  = 14;
-
-    const tGrad = ctx.createLinearGradient(0, -fontSize / 2, 0, fontSize / 2);
-    tGrad.addColorStop(0,   "#F5E9F9");
-    tGrad.addColorStop(0.5, "#86D5FD");
-    tGrad.addColorStop(1,   "#C199D6");
-    ctx.fillStyle = tGrad;
-    ctx.fillText(char, 0, 0);
-
-    ctx.strokeStyle = "rgba(20, 0, 30, 0.7)";
-    ctx.lineWidth   = 1.5;
+    // White outline first so bold colors stay crisp against any skin tone
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.lineWidth   = fontSize * 0.16;
+    ctx.lineJoin    = "round";
     ctx.strokeText(char, 0, 0);
+
+    ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+    ctx.shadowBlur  = 6;
+    ctx.shadowOffsetY = 2;
+    ctx.fillStyle = color;
+    ctx.fillText(char, 0, 0);
     ctx.restore();
   });
 
