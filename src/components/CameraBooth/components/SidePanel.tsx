@@ -4,12 +4,14 @@ import { STICKER_FILTERS } from "../utils/faceFilters";
 interface SidePanelProps {
   currentFilter: string;
   currentSticker: string;
+  currentFrameName: string | null;
   shots: (string | null)[];
   showReview: boolean;
   reshootIndex: number | null;
   countdown: number | null;
   onFilterClick: () => void;
   onStickerClick: () => void;
+  onFrameClick: () => void;
   onStartSequence: () => void;
   onSnap: (index: number) => void;
   onRetakeAll: () => void;
@@ -18,17 +20,19 @@ interface SidePanelProps {
 
 /**
  * SidePanel Component
- * Camera body side panel with filter, sticker, capture, and gallery buttons
+ * Camera body side panel with filter, sticker, frame, capture, and gallery buttons
  */
 export default function SidePanel({
   currentFilter,
   currentSticker,
+  currentFrameName,
   shots,
   showReview,
   reshootIndex,
   countdown,
   onFilterClick,
   onStickerClick,
+  onFrameClick,
   onStartSequence,
   onSnap,
   onRetakeAll,
@@ -96,6 +100,38 @@ export default function SidePanel({
         </div>
         <span className="text-xs font-bold text-zinc-400 group-hover:text-white transition-colors">
           Sticker
+        </span>
+      </button>
+
+      {/* Frame Button */}
+      <button
+        onClick={onFrameClick}
+        className="flex flex-col items-center gap-2 p-2 rounded-xl transition-all hover:scale-105 hover:bg-white/5 group"
+      >
+        <div
+          className="w-14 h-14 rounded-full overflow-hidden transition-all group-hover:scale-110 flex items-center justify-center bg-zinc-800"
+          style={{
+            border: `2px solid ${colors.cyan}`,
+            boxShadow: `0 0 20px ${colors.cyan}30`,
+          }}
+        >
+          <svg
+            className="w-6 h-6"
+            style={{ color: colors.cyan }}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z M8 4v16 M16 4v16"
+            />
+          </svg>
+        </div>
+        <span className="text-xs font-bold text-zinc-400 group-hover:text-white transition-colors text-center leading-tight">
+          {currentFrameName ?? "Frame"}
         </span>
       </button>
 

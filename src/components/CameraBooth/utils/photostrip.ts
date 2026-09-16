@@ -1,5 +1,5 @@
 import { PHOTOSTRIP_CONFIG } from "../constants";
-import { drawCosmicFrame, drawSlotCornerBrackets } from "./cosmicFrame";
+import { drawCosmicFrame } from "./cosmicFrame";
 
 /**
  * Loads an image from a source URL
@@ -33,10 +33,14 @@ export const roundRectPath = (
 };
 
 /**
- * Generates the final photostrip image with all shots
+ * Generates the final photostrip image with all shots, composited onto the
+ * given frame image. Falls back to the built-in cosmic Mission Patch frame
+ * (drawn live on canvas) when no frame image is available — e.g. the very
+ * first run before any frame has been uploaded to the library.
  */
 export const generatePhotostrip = async (
-  shots: (string | null)[]
+  shots: (string | null)[],
+  frameImageUrl?: string | null
 ): Promise<string> => {
   const { width, height, quality, slots, padding, borderRadius } =
     PHOTOSTRIP_CONFIG;
@@ -46,8 +50,13 @@ export const generatePhotostrip = async (
   finalCanvas.height = height;
   const ctx = finalCanvas.getContext("2d")!;
 
-  // Draw the cosmic Mission Patch frame: sky, nebula glow, stars, mascots, wordmarks
-  await drawCosmicFrame(ctx, width, height);
+  if (frameImageUrl) {
+    const frame = await loadImage(frameImageUrl);
+    ctx.drawImage(frame, 0, 0, width, height);
+  } else {
+    // Draw the cosmic Mission Patch frame: sky, nebula glow, stars, mascots, wordmarks
+    await drawCosmicFrame(ctx, width, height);
+  }
 
   // Draw each shot
   for (let i = 0; i < shots.length; i++) {
@@ -83,9 +92,6 @@ export const generatePhotostrip = async (
     roundRectPath(ctx, sx, sy, sw, sh, borderRadius);
     ctx.stroke();
     ctx.restore();
-
-    // HUD-style corner brackets, matching the Mission Patch frame
-    drawSlotCornerBrackets(ctx, sx, sy, sw, sh);
   }
 
   return finalCanvas.toDataURL("image/jpeg", quality);
@@ -95,9 +101,10 @@ export const generatePhotostrip = async (
  * Triggers a download of the photostrip
  */
 export const downloadPhotostrip = async (
-  shots: (string | null)[]
+  shots: (string | null)[],
+  frameImageUrl?: string | null
 ): Promise<void> => {
-  const url = await generatePhotostrip(shots);
+  const url = await generatePhotostrip(shots, frameImageUrl);
   const a = document.createElement("a");
   a.href = url;
   a.download = "photostrip.png";

@@ -4,6 +4,7 @@ import { downloadPhotostrip } from "../utils";
 
 interface ReviewSectionProps {
   shots: (string | null)[];
+  frameImageUrl: string | null;
   email: string;
   sending: boolean;
   sent: boolean;
@@ -21,6 +22,7 @@ interface ReviewSectionProps {
  */
 export default function ReviewSection({
   shots,
+  frameImageUrl,
   email,
   sending,
   sent,
@@ -154,7 +156,7 @@ export default function ReviewSection({
       {/* Download & Email */}
       <div className="space-y-3 pt-4">
         <button
-          onClick={() => downloadPhotostrip(shots)}
+          onClick={() => downloadPhotostrip(shots, frameImageUrl)}
           className="w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98]"
           style={{
             background: `linear-gradient(135deg, ${colors.cyan}, ${colors.blue})`,

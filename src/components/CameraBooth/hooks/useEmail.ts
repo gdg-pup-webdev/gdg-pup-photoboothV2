@@ -7,7 +7,10 @@ interface UseEmailResult {
   sent: boolean;
   emailError: string;
   setEmail: React.Dispatch<React.SetStateAction<string>>;
-  sendEmail: (shots: (string | null)[]) => Promise<void>;
+  sendEmail: (
+    shots: (string | null)[],
+    frameImageUrl?: string | null
+  ) => Promise<void>;
   resetEmailState: () => void;
 }
 
@@ -20,12 +23,15 @@ export function useEmail(): UseEmailResult {
   const [sent, setSent] = useState<boolean>(false);
   const [emailError, setEmailError] = useState<string>("");
 
-  const sendEmail = useCallback(async (shots: (string | null)[]) => {
+  const sendEmail = useCallback(async (
+    shots: (string | null)[],
+    frameImageUrl?: string | null
+  ) => {
     setSending(true);
     setEmailError("");
-    
+
     try {
-      const dataUrl = await generatePhotostrip(shots);
+      const dataUrl = await generatePhotostrip(shots, frameImageUrl);
       const blob = await (await fetch(dataUrl)).blob();
 
       console.log("Generated blob:", {
