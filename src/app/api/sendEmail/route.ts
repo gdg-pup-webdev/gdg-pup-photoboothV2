@@ -1,5 +1,10 @@
-import nodemailer from "nodemailer";
 import { getEmailTemplate } from "./emailTemplate";
+
+// Sender address. Must be on a domain verified in Resend (e.g. gdgpup.org),
+// otherwise Resend rejects the send. Override via the EMAIL_FROM env var so the
+// verified address can change without a code change.
+const FROM_ADDRESS =
+  process.env.EMAIL_FROM || "GDG Photobooth <photobooth@gdgpup.org>";
 
 export async function POST(req: Request) {
   try {
@@ -18,12 +23,8 @@ export async function POST(req: Request) {
     }
 
     // Validate environment variables
-    if (
-      !process.env.SMTP_HOST ||
-      !process.env.SMTP_USER ||
-      !process.env.SMTP_PASS
-    ) {
-      console.error("Missing SMTP configuration");
+    if (!process.env.RESEND_API_KEY) {
+      console.error("Missing RESEND_API_KEY");
       return new Response(
         JSON.stringify({ message: "Email service is not configured properly" }),
         {
@@ -52,37 +53,52 @@ export async function POST(req: Request) {
       );
     }
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
     // Generate the HTML email template
     const htmlContent = getEmailTemplate(email);
 
-    const mailOptions = {
-      from: `"GDG Photobooth" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: "✨ Your GDG on Campus PUP Photostrip is Here!",
-      text: "Hey Sparkmate! Your photostrip from GDG on Campus PUP is attached. Thanks for joining us!",
-      html: htmlContent,
-      attachments: [
-        {
-          filename: "gdg-photostrip.jpg",
-          content: buffer,
-          contentType: "image/jpeg",
-        },
-      ],
-    };
-
     console.log("Sending email with attachment size:", buffer.length, "bytes");
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully:", info.messageId);
+
+    // Send via the Resend REST API (no SDK dependency; runs on the Node
+    // runtime). The photostrip is attached as base64.
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_ADDRESS,
+        to: [email],
+        subject: "✨ Your GDG on Campus PUP Photostrip is Here!",
+        text: "Hey Sparkmate! Your photostrip from GDG on Campus PUP is attached. Thanks for joining us!",
+        html: htmlContent,
+        attachments: [
+          {
+            filename: "gdg-photostrip.jpg",
+            content: buffer.toString("base64"),
+          },
+        ],
+      }),
+    });
+
+    if (!resendResponse.ok) {
+      const detail = await resendResponse.text();
+      console.error("Error sending email:", resendResponse.status, detail);
+      return new Response(
+        JSON.stringify({
+          message: "Failed to send email. Please try again later.",
+          error:
+            process.env.NODE_ENV === "development" ? detail : undefined,
+        }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const data = (await resendResponse.json()) as { id?: string };
+    console.log("Email sent successfully:", data.id);
 
     return new Response(
       JSON.stringify({ message: "Email sent successfully!" }),
